@@ -402,6 +402,7 @@ struct IDLOptions {
     kBinary = 1 << 8,
     kTs = 1 << 9,
     kJsonSchema = 1 << 10,
+    kSwift = 1 << 11,
     kMAX
   };
 
@@ -785,6 +786,12 @@ extern bool GeneratePhp(const Parser &parser,
 extern bool GeneratePython(const Parser &parser,
                            const std::string &path,
                            const std::string &file_name);
+
+// Generate Swift files from the definitions in the Parser object.
+// See idl_gen_swift.cpp.
+extern bool GenerateSwift(const Parser &parser,
+                          const std::string &path,
+                          const std::string &file_name);
 
 // Generate Json schema file
 // See idl_gen_json_schema.cpp.
