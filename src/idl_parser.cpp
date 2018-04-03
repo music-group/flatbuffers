@@ -30,7 +30,7 @@ const double kPi = 3.14159265358979323846;
 const char *const kTypeNames[] = {
 // clang-format off
   #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-    CTYPE, JTYPE, GTYPE, NTYPE, PTYPE) \
+    CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, STYPE) \
     IDLTYPE,
     FLATBUFFERS_GEN_TYPES(FLATBUFFERS_TD)
   #undef FLATBUFFERS_TD
@@ -41,7 +41,7 @@ const char *const kTypeNames[] = {
 const char kTypeSizes[] = {
 // clang-format off
   #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-      CTYPE, JTYPE, GTYPE, NTYPE, PTYPE) \
+      CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, STYPE) \
       sizeof(CTYPE),
     FLATBUFFERS_GEN_TYPES(FLATBUFFERS_TD)
   #undef FLATBUFFERS_TD
@@ -210,7 +210,7 @@ static std::string TokenToString(int t) {
       FLATBUFFERS_GEN_TOKENS(FLATBUFFERS_TOKEN)
     #undef FLATBUFFERS_TOKEN
     #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-      CTYPE, JTYPE, GTYPE, NTYPE, PTYPE) \
+      CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, STYPE) \
       IDLTYPE,
       FLATBUFFERS_GEN_TYPES(FLATBUFFERS_TD)
     #undef FLATBUFFERS_TD
@@ -1066,7 +1066,7 @@ CheckedError Parser::ParseTable(const StructDef &struct_def, std::string *value,
         switch (field_value.type.base_type) {
           // clang-format off
           #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-            CTYPE, JTYPE, GTYPE, NTYPE, PTYPE) \
+            CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, STYPE) \
             case BASE_TYPE_ ## ENUM: \
               builder_.Pad(field->padding); \
               if (struct_def.fixed) { \
@@ -1083,7 +1083,7 @@ CheckedError Parser::ParseTable(const StructDef &struct_def, std::string *value,
             FLATBUFFERS_GEN_TYPES_SCALAR(FLATBUFFERS_TD);
           #undef FLATBUFFERS_TD
           #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-            CTYPE, JTYPE, GTYPE, NTYPE, PTYPE) \
+            CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, STYPE) \
             case BASE_TYPE_ ## ENUM: \
               builder_.Pad(field->padding); \
               if (IsStruct(field->value.type)) { \
@@ -1163,7 +1163,7 @@ CheckedError Parser::ParseVector(const Type &type, uoffset_t *ovalue) {
     switch (val.type.base_type) {
       // clang-format off
       #define FLATBUFFERS_TD(ENUM, IDLTYPE, \
-        CTYPE, JTYPE, GTYPE, NTYPE, PTYPE) \
+        CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, STYPE) \
         case BASE_TYPE_ ## ENUM: \
           if (IsStruct(val.type)) SerializeStruct(*val.type.struct_def, val); \
           else { \
