@@ -14,21 +14,118 @@ static std::string GeneratedFileName(const std::string &path,
 namespace swift {
 
 
-// Iterate through all definitions we haven't generate code for (enums, structs,
+// Iterate through all definitions we haven't generated code for (enums, structs,
 // and tables) and output them to a single file.
 class SwiftGenerator : public BaseGenerator {
  public:
-  SwiftGenerator(const Parser &parser, const std::string &path,
-                  const std::string &file_name)
-      : BaseGenerator(parser, path, file_name, "" /* not used */,
-                      "" /* not used */){};
+  SwiftGenerator(const Parser &parser, const std::string &path, const std::string &file_name)
+      : BaseGenerator(parser, path, file_name, "" /* not used */, "" /* not used */){
+    const char *swiftKeywords[] = { "associatedtype",
+                                    "class",
+                                    "deinit",
+                                    "enum",
+                                    "extension",
+                                    "fileprivate",
+                                    "func",
+                                    "import",
+                                    "init",
+                                    "inout",
+                                    "internal",
+                                    "let",
+                                    "open",
+                                    "operator",
+                                    "private",
+                                    "protocol",
+                                    "public",
+                                    "static",
+                                    "struct",
+                                    "subscript",
+                                    "typealias",
+                                    "var",
+                                    "break",
+                                    "case",
+                                    "continue",
+                                    "default",
+                                    "defer",
+                                    "do",
+                                    "else",
+                                    "fallthrough",
+                                    "for",
+                                    "guard",
+                                    "if",
+                                    "in",
+                                    "repeat",
+                                    "return",
+                                    "switch",
+                                    "where",
+                                    "while",
+                                    "as",
+                                    "Any",
+                                    "catch",
+                                    "false",
+                                    "is",
+                                    "nil",
+                                    "rethrows",
+                                    "super",
+                                    "self",
+                                    "Self",
+                                    "throw",
+                                    "throws",
+                                    "true",
+                                    "try",
+                                    "_",
+                                    "associativity",
+                                    "convenience",
+                                    "dynamic",
+                                    "didSet",
+                                    "final",
+                                    "get",
+                                    "infix",
+                                    "indirect",
+                                    "lazy",
+                                    "left",
+                                    "mutating",
+                                    "none",
+                                    "nonmutating",
+                                    "optional",
+                                    "override",
+                                    "postfix",
+                                    "precedence",
+                                    "prefix",
+                                    "Protocol",
+                                    "required",
+                                    "right",
+                                    "set",
+                                    "Type",
+                                    "unowned",
+                                    "weak",
+                                    "willSet"};
+    for (auto kw = swiftKeywords; *kw; kw++) {
+      keywords_.insert(*kw);
+    }
+  }
 
   bool generate() {
-    std::string one_file_code;
+    std::string one_file_code ;
+
+    // Generate code for all the enum declarations.
+    for (auto it = parser_.enums_.vec.begin(); it != parser_.enums_.vec.end(); ++it) {
+      std::string declcode;
+      const auto &enum_def = **it;
+      if (!enum_def.generated) {
+        GenEnum(enum_def, parser_, &declcode);
+        std::cout << declcode << "\n --------------------- \n \n \n" << std::endl;
+      }
+
+      if (parser_.opts.one_file) {
+        one_file_code += declcode;
+      } else {
+        if (!SaveType(**it, declcode)) return false;
+      }
+    }
 
     // Generate Swift code for structs
-    for (auto it = parser_.structs_.vec.begin();
-        it != parser_.structs_.vec.end(); ++it) {
+    for (auto it = parser_.structs_.vec.begin(); it != parser_.structs_.vec.end(); ++it) {
 
       std::string declcode;
       GenStruct(**it, &declcode);
@@ -51,8 +148,20 @@ class SwiftGenerator : public BaseGenerator {
     return true;
   }
 
+  std::string EscapeKeyword(const std::string &name) const {
+    return keywords_.find(name) == keywords_.end() ? name : name + "_";
+  }
+
+  std::string Name(const Definition &def) const {
+    return EscapeKeyword(def.name);
+  }
+
+  std::string Name(const EnumVal &ev) const { return EscapeKeyword(ev.name); }
+
  private:
   Namespace swift_namespace_;
+
+  std::set<std::string> keywords_;
 
   void BeginFile(const std::string name_space_name, std::string *code_ptr) {
     std::string &code = *code_ptr;
@@ -60,9 +169,11 @@ class SwiftGenerator : public BaseGenerator {
     code += "import FlatBuffers\n\n";
   }
 
-  // Save out the generated code for a Go Table type.
+  // Save out the generated code for a Swift Table type.
   bool SaveType(const Definition &def, const std::string &classcode) {
-    if (!classcode.length()) return true;
+    if (!classcode.length()) {
+      return true;
+    }
 
     Namespace &ns = swift_namespace_.components.empty() ? *def.defined_namespace
                                                     : swift_namespace_;
@@ -76,20 +187,6 @@ class SwiftGenerator : public BaseGenerator {
 
   // Return a Swift type from the table in idl.h
   std::string GenType(const Type &type) const {
-    /*
-    static const char *ctypename[] = {
-    // clang-format off
-    #define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, STYPE) \
-            #STYPE,
-        FLATBUFFERS_GEN_TYPES(FLATBUFFERS_TD)
-    #undef FLATBUFFERS_TD
-      // clang-format on
-    };
-    if (user_facing_type) {
-      if (type.enum_def) {\
-        return WrapInNameSpace(*type.enum_def);
-      }
-*/
       switch (type.base_type) {
         case BASE_TYPE_NONE:
           return "Void";
@@ -120,7 +217,6 @@ class SwiftGenerator : public BaseGenerator {
         case BASE_TYPE_STRING:
           return "String";
         case BASE_TYPE_VECTOR: {
-          // const auto type_name = GenTypeWire(type.VectorType(), "", false);
           const auto type_name = GenType(type.VectorType());
           return "Array<" + type_name + ">";
         }
@@ -132,25 +228,6 @@ class SwiftGenerator : public BaseGenerator {
           return "Never";
     }
   }
-
-  // Return a Swift non-scalar type from the table in 
-  // std::string GenTypePointer(const Type &type) const {
-  //   switch (type.base_type) {
-  //     case BASE_TYPE_STRING: {
-  //       return "String";
-  //     }
-  //     case BASE_TYPE_VECTOR: {
-  //       const auto type_name = GenTypeWire(type.VectorType(), "", false);
-  //       return "Array<" + type_name + ">";
-  //     }
-  //     case BASE_TYPE_STRUCT: {
-  //       return WrapInNameSpace(*type.struct_def);
-  //     }
-  //     case BASE_TYPE_UNION:
-  //     // fall through
-  //     default: { return "void"; }
-  //   }
-  // }
 
   void GenStruct(const StructDef &struct_def, std::string *code_ptr) {
     GenComment(struct_def.doc_comment, code_ptr, nullptr);
@@ -174,25 +251,67 @@ class SwiftGenerator : public BaseGenerator {
 
       code += "    var ";
       code += MakeCamel(field.name, false);
-      
+
       code += ": ";
 
       code += GenType(field.value.type);
 
       code += " { get }\n";
     }
-    
+
     code += "}\n\n";
+  }
+
+  // Return a Swift type from the table in idl.h
+  std::string GenTypeBasic(const Type &type, bool user_facing_type) const {
+    static const char *ctypename[] = {
+        // clang-format off
+#define FLATBUFFERS_TD(ENUM, IDLTYPE, CTYPE, JTYPE, GTYPE, NTYPE, PTYPE, STYPE) \
+            #CTYPE,
+        FLATBUFFERS_GEN_TYPES(FLATBUFFERS_TD)
+#undef FLATBUFFERS_TD
+        // clang-format on
+    };
+    if (user_facing_type) {
+      if (type.enum_def) return WrapInNameSpace(*type.enum_def);
+      if (type.base_type == BASE_TYPE_BOOL) return "bool";
+    }
+    return ctypename[type.base_type];
+  }
+
+  // Generate an enum declaration,
+  // an enum string lookup table,
+  // and an enum array of values
+  void GenEnum(const EnumDef &enum_def, const Parser &parser, std::string *code_ptr) {
+    std::string &code = *code_ptr;
+
+    GenComment(enum_def.doc_comment, code_ptr, nullptr);
+    code += "enum " +  Name(enum_def) + ": Int";
+    code += " {\n";
+
+    int64_t anyv = 0;
+    const EnumVal *minv = nullptr, *maxv = nullptr;
+    for (auto it = enum_def.vals.vec.begin(); it != enum_def.vals.vec.end(); ++it) {
+      const auto &ev = **it;
+
+      code += "\t case " + ev.name + " = " + NumToString(ev.value) + "\n";
+
+      minv = !minv || minv->value > ev.value ? &ev : minv;
+      maxv = !maxv || maxv->value < ev.value ? &ev : maxv;
+      anyv |= ev.value;
+    }
+    code += "}\n";
   }
 };
 
 } // namespace swift
 
-bool GenerateSwift(const Parser &parser, const std::string &path,
+bool GenerateSwift(const Parser &parser,
+                    const std::string &path,
                     const std::string &file_name) {
   swift::SwiftGenerator generator(parser, path, file_name);
   return generator.generate();
 }
 
-
 }  // namespace flatbuffers
+
