@@ -100,7 +100,7 @@ class SwiftGenerator : public BaseGenerator {
                                     "unowned",
                                     "weak",
                                     "willSet"};
-    for (auto kw = swiftKeywords; *kw; kw++) {
+    for (const auto& kw : swiftKeywords) {
       keywords_.insert(*kw);
     }
   }
@@ -114,7 +114,6 @@ class SwiftGenerator : public BaseGenerator {
       const auto &enum_def = **it;
       if (!enum_def.generated) {
         GenEnum(enum_def, parser_, &declcode);
-        std::cout << declcode << "\n --------------------- \n \n \n" << std::endl;
       }
 
       if (parser_.opts.one_file) {
@@ -226,6 +225,9 @@ class SwiftGenerator : public BaseGenerator {
 
         case BASE_TYPE_UNION:
           return "Never";
+        default:
+          assert("tried to retrieve unknown type, a new case must be required");
+          return "";
     }
   }
 
