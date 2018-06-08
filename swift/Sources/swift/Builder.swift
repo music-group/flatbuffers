@@ -373,7 +373,7 @@ extension Builder {
 
         //TODO: Add the ability to reuse pre-existing vtables
 
-        // Write memory locations to data in vtable 
+        // Write memory locations to data in vtable
         for index in stride(from: objectOffset, to: objectOffset - (dataLength - 1), by: -1) {
             addVOffset(VOffset(index))
         }
@@ -398,5 +398,25 @@ extension Builder {
 
         nested = false
         return objectOffset
+    }
+}
+
+// String related methods
+extension Builder {
+    // CreateString writes a null-terminated string as a vector.
+    func createString(string: String) -> UOffset {
+        guard let stringData = string.data(using: .ascii) else {
+            fatalError("Tried to convert a string that contained non ascii charactor")
+        }
+
+        startVector(elementTypeSize: 1, elememtCount: UInt32(string.count), alignment: 1)
+
+        let stringSize: UInt32 = UInt32(stringData.count)
+
+        spaceRemaining -= stringSize
+
+        buffer.replaceSubrange(getBufferRange(rangeLength: stringSize), with: stringData)
+
+        return endVector()
     }
 }
