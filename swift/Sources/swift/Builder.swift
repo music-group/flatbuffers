@@ -373,7 +373,7 @@ extension Builder {
 
         //TODO: Add the ability to reuse pre-existing vtables
 
-        // Write memory locations to data in vtable
+        // Write memory locations to data in vtable 
         for index in stride(from: objectOffset, to: objectOffset - (dataLength - 1), by: -1) {
             addVOffset(VOffset(index))
         }
