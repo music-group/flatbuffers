@@ -101,7 +101,7 @@ class SwiftGenerator : public BaseGenerator {
                                     "weak",
                                     "willSet"};
     for (const auto& kw : swiftKeywords) {
-      keywords_.insert(*kw);
+      keywords_.insert(kw);
     }
   }
 
