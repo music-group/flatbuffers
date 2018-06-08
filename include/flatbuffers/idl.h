@@ -40,25 +40,27 @@ namespace flatbuffers {
 // Additionally, Parser::ParseType assumes bool..string is a contiguous range
 // of type tokens.
 // clang-format off
+
+// enum     schema     c++          Java      Go        c#              python    swift
 #define FLATBUFFERS_GEN_TYPES_SCALAR(TD) \
-  TD(NONE,   "",       uint8_t,  byte,   byte,    byte,   uint8, Void) \
-  TD(UTYPE,  "",       uint8_t,  byte,   byte,    byte,   uint8, Void) /* begin scalar/int */ \
-  TD(BOOL,   "bool",   uint8_t,  boolean,byte,    bool,   bool, Bool) \
-  TD(CHAR,   "byte",   int8_t,   byte,   int8,    sbyte,  int8, Int8) \
-  TD(UCHAR,  "ubyte",  uint8_t,  byte,   byte,    byte,   uint8, UInt8) \
-  TD(SHORT,  "short",  int16_t,  short,  int16,   short,  int16, Int16) \
-  TD(USHORT, "ushort", uint16_t, short,  uint16,  ushort, uint16, UInt16) \
-  TD(INT,    "int",    int32_t,  int,    int32,   int,    int32, Int32) \
-  TD(UINT,   "uint",   uint32_t, int,    uint32,  uint,   uint32, UInt32) \
-  TD(LONG,   "long",   int64_t,  long,   int64,   long,   int64, Int64) \
-  TD(ULONG,  "ulong",  uint64_t, long,   uint64,  ulong,  uint64, UInt64) /* end int */ \
-  TD(FLOAT,  "float",  float,    float,  float32, float,  float32, Float) /* begin float */ \
-  TD(DOUBLE, "double", double,   double, float64, double, float64, Double) /* end float/scalar */
+  TD(NONE,   "",       uint8_t,     byte,     byte,     byte,           uint8,    Void) \
+  TD(UTYPE,  "",       uint8_t,     byte,     byte,     byte,           uint8,    Void) /* begin scalar/int */ \
+  TD(BOOL,   "bool",   uint8_t,     boolean,  byte,     bool,           bool,     Bool) \
+  TD(CHAR,   "byte",   int8_t,      byte,     int8,     sbyte,          int8,     Int8) \
+  TD(UCHAR,  "ubyte",  uint8_t,     byte,     byte,     byte,           uint8,    UInt8) \
+  TD(SHORT,  "short",  int16_t,     short,    int16,    short,          int16,    Int16) \
+  TD(USHORT, "ushort", uint16_t,    short,    uint16,   ushort,         uint16,   UInt16) \
+  TD(INT,    "int",    int32_t,     int,      int32,    int,            int32,    Int32) \
+  TD(UINT,   "uint",   uint32_t,    int,      uint32,   uint,           uint32,   UInt32) \
+  TD(LONG,   "long",   int64_t,     long,     int64,    long,           int64,    Int64) \
+  TD(ULONG,  "ulong",  uint64_t,    long,     uint64,   ulong,          uint64,   UInt64) /* end int */ \
+  TD(FLOAT,  "float",  float,       float,    float32,  float,          float32,  Float) /* begin float */ \
+  TD(DOUBLE, "double", double,      double,   float64,  double,         float64,  Double) /* end float/scalar */
 #define FLATBUFFERS_GEN_TYPES_POINTER(TD) \
-  TD(STRING, "string", Offset<void>, int, int, StringOffset, int, String) \
-  TD(VECTOR, "",       Offset<void>, int, int, VectorOffset, int, Array) \
-  TD(STRUCT, "",       Offset<void>, int, int, int, int, Void) \
-  TD(UNION,  "",       Offset<void>, int, int, int, int, Void)
+  TD(STRING, "string", Offset<void>, int,     int,      StringOffset,   int,      String) \
+  TD(VECTOR, "",       Offset<void>, int,     int,      VectorOffset,   int,      Array) \
+  TD(STRUCT, "",       Offset<void>, int,     int,      int,            int,      Void) \
+  TD(UNION,  "",       Offset<void>, int,     int,      int,            int,      Void)
 
 // The fields are:
 // - enum
