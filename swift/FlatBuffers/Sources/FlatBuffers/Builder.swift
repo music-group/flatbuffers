@@ -1,5 +1,6 @@
 import Foundation
 
+// Make it trivial to get the little endian version of the Integer types we are conserned with
 extension FixedWidthInteger {
     var littleEndianData: Data {
         get {
@@ -9,13 +10,14 @@ extension FixedWidthInteger {
     }
 }
 
+// Even though these type names are not the most `swifty` it makes them easy to reference back to the
+// flatbuffer documentation and other flatbuffer implementations
+typealias SOffset = Int32
+typealias UOffset = UInt32
+typealias VOffset = UInt16
+
 // Flatbuffer builder that is used by the Flatbuffer compiler to generate entities defined in user-defined schemas
 class Builder {
-    // Even though these type names are not the most `swifty` it makes them easy to reference back to the
-    // flatbuffer documentation and other flatbuffer implementations
-    typealias SOffset = Int32
-    typealias UOffset = UInt32
-    typealias VOffset = UInt16
 
     // flatbuffer constants, static to allow use as function parameter defaults but
     // we can not calculate them using bitWidth
@@ -472,7 +474,7 @@ extension StringBuilderMethods {
         - Parameter string: A swift string with only ASCII valid charactors
      */
     func createString(string: String) -> UOffset {
-        guard let stringData = string.data(using: .ascii) else {
+        guard let stringData = string.data(using: .utf8) else {
             fatalError("Tried to convert a string that contained non ascii charactor")
         }
 
