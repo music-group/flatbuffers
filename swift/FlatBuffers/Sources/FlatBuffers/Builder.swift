@@ -12,23 +12,23 @@ extension FixedWidthInteger {
 
 // Even though these type names are not the most `swifty` it makes them easy to reference back to the
 // flatbuffer documentation and other flatbuffer implementations
-typealias SOffset = Int32
-typealias UOffset = UInt32
-typealias VOffset = UInt16
+public typealias SOffset = Int32
+public typealias UOffset = UInt32
+public typealias VOffset = UInt16
 
 // Flatbuffer builder that is used by the Flatbuffer compiler to generate entities defined in user-defined schemas
-class Builder {
+public class Builder {
 
     // flatbuffer constants, static to allow use as function parameter defaults but
     // we can not calculate them using bitWidth
-    private static let Int32ByteSize: UInt8 = 4
-    private static let SizeFieldByteSize: UInt8 = Int32ByteSize
-    private static let SOffsetByteSize: UInt8 = Int32ByteSize
-    private static let UOffsetByteSize: UInt8 = Int32ByteSize
-    private static let VOffsetByteSize: UInt8 = 2
-    private static let ShortByteSize: UInt8 = 2
-    private static let ByteSize: UInt8 = 1
-    private static let VtableMetadataFields: UInt8 = 2
+    public static let Int32ByteSize: UInt8 = 4
+    public static let SizeFieldByteSize: UInt8 = Int32ByteSize
+    public static let SOffsetByteSize: UInt8 = Int32ByteSize
+    public static let UOffsetByteSize: UInt8 = Int32ByteSize
+    public static let VOffsetByteSize: UInt8 = 2
+    public static let ShortByteSize: UInt8 = 2
+    public static let ByteSize: UInt8 = 1
+    public static let VtableMetadataFields: UInt8 = 2
 
     /**
         A wrapper around a Swift Data buffer that keeps track of varibles
@@ -47,7 +47,8 @@ class Builder {
 
         mutating func writeData(data: Data) {
             spaceRemaining -= UInt32(data.count)
-            buffer.replaceSubrange(getBufferRange(rangeLength: UInt32(data.count)), with: data)
+            let range = getBufferRange(rangeLength: UInt32(data.count))
+            buffer.replaceSubrange( range, with: data)
         }
 
         /**
@@ -124,7 +125,7 @@ class Builder {
          */
         func getBufferRange(rangeLength: UInt32) -> Range<Data.Index> {
             return buffer.startIndex.advanced(by:
-                Int(currentOffset))..<buffer.startIndex.advanced(by: Int(currentOffset + rangeLength + 1)
+                Int(currentOffset))..<buffer.startIndex.advanced(by: Int(currentOffset + rangeLength)
             )
         }
 
@@ -133,8 +134,18 @@ class Builder {
          */
         func getBufferRange(location: UInt32, rangeLength: UInt32) -> Range<Data.Index> {
             return buffer.startIndex.advanced(by:
-                Int(currentOffset))..<buffer.startIndex.advanced(by: Int(currentOffset + rangeLength + 1)
+                Int(currentOffset))..<buffer.startIndex.advanced(by: Int(currentOffset + rangeLength)
             )
+        }
+
+        func getFinishedDataCopy() -> Data {
+            let dataLength = UInt32(buffer.count) - spaceRemaining
+            return buffer.subdata(in: getBufferRange(location: spaceRemaining, rangeLength: dataLength))
+        }
+
+        func getFinishedDataRef() -> Data {
+            let dataLength = UInt32(buffer.count) - spaceRemaining
+            return buffer[getBufferRange(location: spaceRemaining, rangeLength: dataLength)]
         }
     }
 
@@ -154,7 +165,7 @@ class Builder {
 
      - Parameter initialSize: the number of bytes allocated initially for building the buffer, default 1KiB
     */
-    init(initialSize: UInt32 = 1024) {
+    public init(initialSize: UInt32 = 1024) {
         // buffer = Data(count: initialSize)
         buffer = Buffer(initialSize: initialSize)
         clear()
@@ -202,15 +213,26 @@ class Builder {
 
         // Find the amount of alignment needed such that `size` is properly
         // aligned after `additional_bytes`
-        let preAlignSize = (~(UInt32(buffer.count) - buffer.spaceRemaining + additional_bytes)) + 1
-        let alignSize = preAlignSize & UInt32(size - 1)
+        let alignSize: UInt32 = {
+                            // deal for the case where we overflow the int
+                            // This is when buffer.count ==  buffer.spaceRemaining  && additional_bytes == 0
+                            if ~(UInt32(buffer.count) - buffer.spaceRemaining + additional_bytes) == UInt32.max {
+                                return 0
+                            }
+
+                            let preAlignSize = (~(UInt32(buffer.count) - buffer.spaceRemaining + additional_bytes)) + 1
+                            return preAlignSize & UInt32(size - 1)
+                        }()
 
         // Reallocate the buffer if needed.
         let miniumAboutOfSpaceRequired: UInt32 = alignSize + numericCast(size) + additional_bytes
         if (buffer.spaceRemaining < miniumAboutOfSpaceRequired) {
             buffer.increaseDataSize(minimumExpansion: miniumAboutOfSpaceRequired - buffer.spaceRemaining)
         }
-        pad(byteSize: alignSize);
+
+        if alignSize > 0 {
+            pad(byteSize: alignSize)
+        }
     }
 
     /**
@@ -256,6 +278,7 @@ class Builder {
 
     /**
         Finalizes the buffer, pointing to the given `rootTable`
+
         - Parameter rootTable: the offset of the main table in the buffer
      */
     public func finish(rootTable: UOffset) {
@@ -263,6 +286,18 @@ class Builder {
         prep(size: minAlign, additional_bytes: UInt32(Builder.SOffsetByteSize))
         addUOffset(rootTable)
         finished = true;
+    }
+
+    /**
+        This should only be called after the buffer is finished
+
+        - returns: A copy of the the flatbuffer data, this data will not be affected by
+                    any furture Builder changes
+     */
+    public func getFlatBufferData() -> Data {
+        assertFinished()
+
+        return buffer.getFinishedDataCopy()
     }
 
     private func assertNotNested() {
@@ -307,6 +342,7 @@ typealias VectorBuilderMethods = Builder
 extension VectorBuilderMethods {
     /**
         initializes bookkeeping for writing a new vector.
+
         - Parameter elementTypeSize: The size of an elemenet in bytes
         - Pamameter elememtCount: The number of elements that will be in the vector
         - Parameter alignment: The alignment of the vector, the default is the byte size of an `UOffset`
@@ -344,7 +380,7 @@ extension VectorBuilderMethods {
     }
 
     // CreateByteVector writes a ubyte vector
-    func createByteVector(data: Data) -> UOffset {
+    public func createByteVector(data: Data) -> UOffset {
         assertNotNested()
         nested = true
 
@@ -364,20 +400,14 @@ extension ObjectBuilderMethods {
 
     /**
         initializes bookkeeping for writing a new object.
+
         - Parameter feildCount: about of feilds to be stored in the object
      */
     public func startObject(feildCount: UInt32) {
         assertNotNested()
 
-        if feildCount > vTable.count {
-            // Old vTable too small make a new one
-            vTable = [UOffset](repeating: 0, count: Int(feildCount))
-        }
-
-        else {
-            // reuse old vTable
-            vTable.removeAll(keepingCapacity: true)
-        }
+        // Keep the capacity because the likely hood we will pack the same size object again is high
+        vTable.removeAll(keepingCapacity: true)
 
         nested = true
         objectEnd = buffer.currentOffset
@@ -396,7 +426,7 @@ extension ObjectBuilderMethods {
 
     // Slot sets the vtable key `voffset` to the current location in the buffer.
     private func slot(slotnum: UInt32) {
-        vTable[Int(slotnum)] = buffer.currentOffset
+        vTable.append(buffer.currentOffset)
     }
 
     /**
@@ -473,7 +503,7 @@ extension StringBuilderMethods {
 
         - Parameter string: A swift string with only ASCII valid charactors
      */
-    func createString(string: String) -> UOffset {
+    public func createString(string: String) -> UOffset {
         guard let stringData = string.data(using: .utf8) else {
             fatalError("Tried to convert a string that contained non ascii charactor")
         }
@@ -538,7 +568,7 @@ extension BuilderHelpers {
                             If `value` contains the `defaultValue`, it can be skipped.
         - Parameter defaultValue: A `Bool` default value to compare against.
      */
-    public func addIntegerType<T: FixedWidthInteger>(vTableIndex: UInt32, value: T, defaultValue: T) {
+    public func add<T: FixedWidthInteger>(vTableIndex: UInt32, value: T, defaultValue: T) {
         if value != defaultValue {
             addObjectElement(vTableIndex: vTableIndex,
                              data: value.littleEndianData,
@@ -554,8 +584,10 @@ extension BuilderHelpers {
                             If `value` contains the `defaultValue`, it can be skipped.
         - Parameter defaultValue: A `Bool` default value to compare against.
      */
-    public func addBoolean(vTableIndex: UInt32, value: Bool, defaultValue: Bool) {
-            addIntegerType(vTableIndex: vTableIndex,  value: value ? 1 : 0, defaultValue: defaultValue ? 1: 0)
+    public func add(vTableIndex: UInt32, value: Bool, defaultValue: Bool) {
+        add(vTableIndex: vTableIndex,
+            value: value ? UInt8(1) : UInt8(0),
+            defaultValue: defaultValue ? UInt8(1) : UInt8(0))
     }
 
     /**
@@ -566,7 +598,7 @@ extension BuilderHelpers {
                             If `value` contains the `defaultValue`, it can be skipped.
         - Parameter defaultValue: A `Float` default value to compare against.
      */
-    public func addFloat(vTableIndex: UInt32, value: Float, defaultValue: Float) {
+    public func add(vTableIndex: UInt32, value: Float, defaultValue: Float) {
         if value != defaultValue {
             addObjectElement(vTableIndex: vTableIndex,
                              data: value.bitPattern.littleEndianData,
@@ -582,7 +614,7 @@ extension BuilderHelpers {
                             If `value` contains the `defaultValue`, it can be skipped.
         - Parameter defaultValue: A `Double` default value to compare against.
      */
-    public func addDouble(vTableIndex: UInt32, value: Double, defaultValue: Double) {
+    public func add(vTableIndex: UInt32, value: Double, defaultValue: Double) {
         if value != defaultValue {
             addObjectElement(vTableIndex: vTableIndex,
                              data: value.bitPattern.littleEndianData,
