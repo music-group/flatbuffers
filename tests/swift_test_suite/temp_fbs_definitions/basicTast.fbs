@@ -1,0 +1,5 @@
+table Gain {
+ 	value:int = 100;
+} 
+
+root_type Gain;
